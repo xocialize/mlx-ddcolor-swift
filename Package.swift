@@ -17,7 +17,7 @@ let package = Package(
     products: [
         .library(name: "DDColor", targets: ["DDColor"]),              // MLX core (mlx-swift only)
         .library(name: "MLXDDColor", targets: ["MLXDDColor"]),        // engine-consumable ModelPackage
-        .executable(name: "ddcolor-smoke", targets: ["Smoke"]),       // real-forward parity gate
+        .executable(name: "ddcolor-smoke", targets: ["DDColorSmoke"]), // real-forward parity gate
         .executable(name: "ddcolor-package-smoke", targets: ["PackageSmoke"]),  // drive the ModelPackage
     ],
     dependencies: [
@@ -48,7 +48,7 @@ let package = Package(
             path: "Sources/MLXDDColor"
         ),
         .executableTarget(
-            name: "Smoke",
+            name: "DDColorSmoke",
             dependencies: ["DDColor", .product(name: "ArgumentParser", package: "swift-argument-parser")],
             path: "Sources/Smoke",
             swiftSettings: [.swiftLanguageMode(.v5)]
