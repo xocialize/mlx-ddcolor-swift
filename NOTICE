@@ -1,0 +1,27 @@
+mlx-ddcolor-swift
+=================
+
+This repository is a from-scratch MLX-Swift architecture port (no pre-existing MLX
+implementation) of DDColor:
+
+  DDColor — Copyright (c) DAMO Academy, Alibaba Group — Apache License 2.0
+  https://github.com/piddnad/DDColor
+  "DDColor: Towards Photo-Realistic Image Colorization via Dual Decoders" (ICCV 2023)
+
+The ConvNeXt encoder block is adapted from:
+
+  ConvNeXt — Copyright (c) Meta Platforms, Inc. and affiliates — MIT License
+  https://github.com/facebookresearch/ConvNeXt
+
+The Swift/MLX port (`Sources/DDColor`, `Sources/MLXDDColor`) and the cv2-exact LAB
+pipeline are original to this repository and licensed MIT (see LICENSE). The DDColor
+architecture and the original PyTorch weights remain under Apache-2.0 (piddnad/DDColor).
+
+Converted MLX weights (fp16) are published to Hugging Face mlx-community:
+  - mlx-community/DDColor-paper-tiny-fp16   (ConvNeXt-T)
+  - mlx-community/DDColor-modelscope-fp16   (ConvNeXt-L, recommended default)
+  - mlx-community/DDColor-artistic-fp16     (ConvNeXt-L, stylized)
+Collection: https://huggingface.co/collections/mlx-community/ddcolor-mlx
+
+Two-layer license declaration for MLXEngine admission (C7/C8):
+  weight license = Apache-2.0   ·   port-code license = MIT   (both permissive).
