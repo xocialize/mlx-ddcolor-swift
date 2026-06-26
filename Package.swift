@@ -18,7 +18,7 @@ let package = Package(
         .library(name: "DDColor", targets: ["DDColor"]),              // MLX core (mlx-swift only)
         .library(name: "MLXDDColor", targets: ["MLXDDColor"]),        // engine-consumable ModelPackage
         .executable(name: "ddcolor-smoke", targets: ["DDColorSmoke"]), // real-forward parity gate
-        .executable(name: "ddcolor-package-smoke", targets: ["PackageSmoke"]),  // drive the ModelPackage
+        .executable(name: "ddcolor-package-smoke", targets: ["DDColorPackageSmoke"]),  // drive the ModelPackage
     ],
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift.git", from: "0.31.3"),
@@ -56,7 +56,7 @@ let package = Package(
         // Drives the conformant DDColorPackage through register-shaped load()/run() (the first real
         // forward through the package envelope: license gate → ColorizeRequest dispatch → Image out).
         .executableTarget(
-            name: "PackageSmoke",
+            name: "DDColorPackageSmoke",
             dependencies: [
                 "MLXDDColor",
                 .product(name: "MLXToolKit", package: "mlx-engine-swift"),
