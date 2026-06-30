@@ -21,12 +21,17 @@ public final class DDColorPackage: ModelPackage {
             license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .mit),
             provenance: Provenance(sourceRepo: "mlx-community/DDColor-modelscope-fp16", revision: "main", tier: 2),
             requirements: RequirementsManifest(
-                // Memory-harness measured (M-Max, 1000×553 input, fp16): fast (convnext-t) peak 2.11 GB ·
-                // best (convnext-l) peak 2.45 GB. Both tiers are activation-dominated (fixed 512² model +
-                // native-res colorspace), close, and consumer-friendly — so a single fp16 footprint with
-                // margin covers all three modes (no per-mode footprint / runtime guard needed, unlike
-                // BiRefNet's 6/22 GB split). 4 GB envelope covers larger inputs. See MEMORY-REPORT.md.
-                footprints: [QuantFootprint(quant: .fp16, residentBytes: 4_000_000_000)],
+                // Split footprint (engine 1.14). All three tiers are **activation-dominated** (fixed 512²
+                // model + native-res LAB colorspace), close, and consumer-friendly — so a single fp16
+                // footprint covers all modes (no per-mode footprint / runtime guard, unlike BiRefNet's
+                // 6/22 GB split). Re-measured via `ddcolor-package-smoke` (1024×512, fp16; see
+                // MEMORY-REPORT.md / EFFICIENCY-ADOPTION.md): floor 435 MB (convnext-l weights resident) ·
+                // peak 2236 MB → resident 512 MB / activation 1.8 GB. residentBytes = weights floor (+
+                // overhead); peakActivationBytes = peak − floor. Splitting the old flat 4 GB lets the
+                // engine reserve ONE shared transient across residents — the co-residency win for the
+                // optimizer chain. `QuantConfigured` (DDColorConfiguration) charges the fp16 footprint.
+                // Re-measure if targeting ≥4K envelopes (activation scales with native-res colorspace ops).
+                footprints: [QuantFootprint(quant: .fp16, residentBytes: 512_000_000, peakActivationBytes: 1_800_000_000)],
                 requiredBackends: [.metalGPU],
                 os: OSRequirement(minMacOS: SemanticVersion(major: 26, minor: 0, patch: 0))
             ),

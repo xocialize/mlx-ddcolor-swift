@@ -42,3 +42,8 @@ public struct DDColorConfiguration: PackageConfiguration, ModelStorable {
         self.artisticWeightsURL = artisticWeightsURL
     }
 }
+
+/// `QuantConfigured` (engine 1.14): the config already stores `var quant`, so the `MemoryGovernor`
+/// charges the matching declared `QuantFootprint` (fp16 today) for the selected quant instead of the
+/// largest-that-fits heuristic. Trivial empty conformance.
+extension DDColorConfiguration: QuantConfigured {}
