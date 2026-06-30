@@ -58,7 +58,10 @@ public final class DDColorPackage: ModelPackage {
         if best == nil { best = try await build(.best) }
     }
 
-    public func unload() async { fast = nil; best = nil; artistic = nil }
+    public func unload() async {
+        fast = nil; best = nil; artistic = nil
+        MLX.Memory.clearCache()   // release the retained MLX pool so eviction frees RSS (not just drop refs)
+    }
 
     public func run(_ request: any CapabilityRequest) async throws -> any CapabilityResponse {
         guard request.capability == .imageColorize, let req = request as? ColorizeRequest else {
