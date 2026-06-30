@@ -23,15 +23,18 @@ public final class DDColorPackage: ModelPackage {
             requirements: RequirementsManifest(
                 // Split footprint (engine 1.14). All three tiers are **activation-dominated** (fixed 512²
                 // model + native-res LAB colorspace), close, and consumer-friendly — so a single fp16
-                // footprint covers all modes (no per-mode footprint / runtime guard, unlike BiRefNet's
-                // 6/22 GB split). Re-measured via `ddcolor-package-smoke` (1024×512, fp16; see
-                // MEMORY-REPORT.md / EFFICIENCY-ADOPTION.md): floor 435 MB (convnext-l weights resident) ·
-                // peak 2236 MB → resident 512 MB / activation 1.8 GB. residentBytes = weights floor (+
-                // overhead); peakActivationBytes = peak − floor. Splitting the old flat 4 GB lets the
-                // engine reserve ONE shared transient across residents — the co-residency win for the
-                // optimizer chain. `QuantConfigured` (DDColorConfiguration) charges the fp16 footprint.
-                // Re-measure if targeting ≥4K envelopes (activation scales with native-res colorspace ops).
-                footprints: [QuantFootprint(quant: .fp16, residentBytes: 512_000_000, peakActivationBytes: 1_800_000_000)],
+                // RE-BASELINED to in-app phys_footprint (MLXEngineImage, isolate+clearCache, engine 0.17.0
+                // post-load floor). The `ddcolor-package-smoke` MLX-peak (best/convnext-l: floor 435 MB,
+                // activation 1.8 GB) under-read the admission-relevant phys: the in-app `ddcolor-fast` (tiny
+                // tier) measured floor 0.10 GB · peak 4.64 GB → activation 4.54 GB — already 2.5× the smoke
+                // *best* estimate, despite being the LIGHTER tier. The old-harness "5.4 GB floor" was post-run
+                // retention (BOUNDED — flat across 3 resident passes, freed on evict → belongs in the
+                // transient, not residency). residentBytes kept at 512 MB (best/convnext-l weights, the
+                // heavier default-load tier — covers all modes); peakActivationBytes raised to the in-app
+                // fast number. ⚠️ FLAGGED: the BEST tier (load() default) is not yet measured in-app and is
+                // likely ≥ this — re-measure a `ddcolor-best` in-app run and bump if higher (under-declaring
+                // falsely admits on tight Macs). `QuantConfigured` charges the fp16 footprint.
+                footprints: [QuantFootprint(quant: .fp16, residentBytes: 512_000_000, peakActivationBytes: 4_540_000_000)],
                 requiredBackends: [.metalGPU],
                 os: OSRequirement(minMacOS: SemanticVersion(major: 26, minor: 0, patch: 0))
             ),
