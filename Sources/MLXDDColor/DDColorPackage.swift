@@ -4,6 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 import MLX
 import MLXToolKit
+import MLXProfiling
 import Hub
 import DDColor
 
@@ -73,7 +74,15 @@ public final class DDColorPackage: ModelPackage {
         try Task.checkCancellation()
         let colorizer = try await colorizer(for: req.mode)
         let input = try Self.decode(req.image)
-        let output = colorizer(input)                       // preprocess → forward → recombine → CGImage
+        // Single-shot inference is profiled (MLX_PROFILE=1). The colorizer self-evals its output
+        // (fixed 512² forward + native-res LAB recombine), so the coarse region times it honestly;
+        // phys/⚠PAGING readings flag when a huge native-res recombine nears the working-set ceiling.
+        let prof = MLXProfiler.shared
+        prof.beginRun("ddcolor imageColorize mode=\(req.mode?.rawValue ?? "best") \(input.width)x\(input.height)")
+        let output = prof.region("colorize", "forward") {
+            colorizer(input)                                // preprocess → forward → recombine → CGImage
+        }
+        prof.endRun()   // one image per run — no per-unit denominator
         try Task.checkCancellation()
         let png = try Self.encodePNG(output)
         return ColorizeResponse(image: Image(format: .png, data: png,
