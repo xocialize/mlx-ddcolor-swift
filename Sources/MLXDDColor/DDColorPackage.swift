@@ -68,11 +68,19 @@ public final class DDColorPackage: ModelPackage {
     }
 
     public func run(_ request: any CapabilityRequest) async throws -> any CapabilityResponse {
+        // CAN-1: the entry checkpoint is the FIRST act of run() — before capability validation
+        // (engine ≥ 0.27.0). Mid-run: the forward is ONE monolithic MLX eval (fixed 512² forward
+        // + native-res LAB recombine, no iterative loop); the real seams are pre-forward (after
+        // the lazy tier build / possible weight download) and post-forward/pre-encode below —
+        // see CancellationTests for the cadence of record.
+        try Task.checkCancellation()
         guard request.capability == .imageColorize, let req = request as? ColorizeRequest else {
             throw DDColorError.unsupportedCapability(request.capability)
         }
-        try Task.checkCancellation()
         let colorizer = try await colorizer(for: req.mode)
+        // Pre-forward checkpoint: the tier build above can include a first-request weight
+        // download, so re-check before committing to the forward.
+        try Task.checkCancellation()
         let input = try Self.decode(req.image)
         // Single-shot inference is profiled (MLX_PROFILE=1). The colorizer self-evals its output
         // (fixed 512² forward + native-res LAB recombine), so the coarse region times it honestly;
