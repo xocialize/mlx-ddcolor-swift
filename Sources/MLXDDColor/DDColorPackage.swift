@@ -123,9 +123,9 @@ public final class DDColorPackage: ModelPackage {
                                                    dtype: Self.dtype(configuration.quant))
     }
 
-    /// Resolve the weights file, downloading from HF on first use via swift-transformers `HubApi`
-    /// (pointed at the engine-stamped model-store root; idempotent). A direct override URL bypasses
-    /// the network entirely (pre-resolved caller / CLI smoke).
+    /// The weights file: a direct override URL (pre-resolved caller / CLI smoke), else where the engine materialized
+    /// it before `load()` (`StoreWeights`). Downloading here through swift-transformers' `HubApi` is only a backstop
+    /// for a caller outside the engine; it lands in the `HubApi` layout, which `missingWeightSources` also accepts.
     private func weightsURL(_ tier: Tier) async throws -> URL {
         let override: URL?
         let repo: String
@@ -139,6 +139,9 @@ public final class DDColorPackage: ModelPackage {
                 throw DDColorError.weightsMissing(override)
             }
             return override
+        }
+        if let stored = StoreWeights.file(configuration.weightsFile, repo: repo, root: configuration.modelsRootDirectory) {
+            return stored
         }
         let hub = HubApi(downloadBase: configuration.modelsRootDirectory)
         let dir = try await hub.snapshot(from: repo, matching: ["*.safetensors"]) { @Sendable progress in

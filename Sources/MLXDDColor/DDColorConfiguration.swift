@@ -4,8 +4,8 @@ import MLXToolKit
 /// Configuration for the DDColor `imageColorize` package. Three converted weight sets back the three
 /// tier Modes — `ColorizeContract.fast` = convnext-t · `.best` = convnext-l (modelscope) · `.artistic`
 /// = the artistic convnext-l checkpoint. fast loads the tiny arch; best/artistic share the large arch
-/// (zero code difference — only `DDColorTier` + weights change). Weights resolve under the engine's
-/// model store (`modelsRootDirectory` + repo dir + `weightsFile`).
+/// (zero code difference — only `DDColorTier` + weights change). All three repos are declared `weightSources`,
+/// which the engine downloads into its model store before `load()`.
 public struct DDColorConfiguration: PackageConfiguration, ModelStorable {
     /// HF repo id for the converted MLX `.safetensors` backing each tier.
     public var fastRepo: String
@@ -47,3 +47,27 @@ public struct DDColorConfiguration: PackageConfiguration, ModelStorable {
 /// charges the matching declared `QuantFootprint` (fp16 today) for the selected quant instead of the
 /// largest-that-fits heuristic. Trivial empty conformance.
 extension DDColorConfiguration: QuantConfigured {}
+
+/// The weights the engine materializes before `load()` (contract 1.24): every tier's checkpoint, since a request can
+/// name any Mode (ForgeCore's colorize provider maps fast / best / artistic). The engine sizes, previews and downloads
+/// them (resumably) instead of the package fetching each on first use: 110 MB tiny + 2 × 456 MB large.
+extension DDColorConfiguration: WeightSourcing {
+    public var weightSources: [WeightSource] {
+        [WeightSource(role: "fast", repo: fastRepo, matching: [weightsFile]),
+         WeightSource(role: "best", repo: bestRepo, matching: [weightsFile]),
+         WeightSource(role: "artistic", repo: artisticRepo, matching: [weightsFile])]
+    }
+
+    /// The explicit weights URLs first, then the store's layouts, including where 0.2.x downloaded them.
+    public func missingWeightSources(storeRoot: URL?) -> [WeightSource] {
+        defaultMissingWeightSources(storeRoot: storeRoot).filter { source in
+            let override = switch source.role {
+            case "fast": fastWeightsURL
+            case "artistic": artisticWeightsURL
+            default: bestWeightsURL
+            }
+            if let override, FileManager.default.fileExists(atPath: override.path) { return false }
+            return !StoreWeights.installedByHubAPI(weightsFile, repo: source.repo, root: storeRoot)
+        }
+    }
+}

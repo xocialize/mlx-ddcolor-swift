@@ -29,6 +29,17 @@ cd .. && swift run -c release ddcolor-smoke --tier tiny \
 # → [smoke] tiny  max_abs=3.3e-6  OK ✅
 ```
 
+## Weights
+The MLXEngine package (`DDColorPackage`) loads three converted checkpoints, one per Mode:
+`mlx-community/DDColor-paper-tiny-fp16` (`fast`, 110 MB), `mlx-community/DDColor-modelscope-fp16` (`best`, 456 MB)
+and `mlx-community/DDColor-artistic-fp16` (`artistic`, 456 MB).
+
+Since 0.3.0 (AB-T-0222) `DDColorConfiguration` declares all three as `weightSources`, so MLXEngine sizes, previews
+and downloads them into its model store before `load()`, with byte progress and resume. `load()` reads the store's
+flat or snapshot layout, and also `<root>/models/<org>/<name>/`, where 0.2.x downloaded through swift-transformers'
+`HubApi`, so existing installs aren't fetched again. Outside the engine it still downloads through `HubApi`. The
+`*WeightsURL` overrides bypass all of it.
+
 ## License
 Port code MIT. DDColor architecture + weights Apache-2.0 (piddnad/DDColor). ConvNeXt block
 adapted from facebookresearch/ConvNeXt (MIT).
